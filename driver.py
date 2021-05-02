@@ -3,7 +3,7 @@ from selenium.webdriver.common.keys import Keys
 from contextlib import contextmanager
 from time import sleep
 import traceback
-from settings import EMAIL
+from settings.settings import EMAIL
 
 
 class WebDriver:
@@ -27,17 +27,20 @@ class WebDriver:
         }
     }
 
-    def __init__(self, timeout=False):
+    def __init__(self,device='desktop', timeout=False):
         # TODO: сделать два агента: телефон и комп и выбор агента рандомно
         print('__init__ method called')
-        self.xpath = self.__xpaths_of['desktop']
-        self.driver = webdriver.Chrome()
+        self.xpath = self.__xpaths_of[device]
+        # driver settings
+        self.driver = None
+        # user settings
         self.email = EMAIL
+        self.password = None
         sleep(2)
 
     def __enter__(self):
         print('__enter__ method called')
-        self.login()
+        self.enter()
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
@@ -47,33 +50,45 @@ class WebDriver:
         
         return True
         
+    def _click_on(self, btn):
+        sleep(12)
+        login_btn = self.driver.find_element_by_xpath(self.xpath[btn])
+        login_btn.click()
+
+    def _write_to(self, input_field, data):
+        sleep(9)
+        field_in = self.driver.find_element_by_xpath(self.xpath[input_field])
+        field_in.clear()
+        sleep(9)
+        field_in.send_keys(data)
+        return field_in
+
+    def start(self):
+        self.driver.get('https://hh.ru/')
 
     def login(self):
-        self.driver.get('https://hh.ru/')
-        login_btn = self.driver.find_element_by_xpath(self.xpath['login_btn'])
-        login_btn.click()
-        sleep(12)
-        email_in = self.driver.find_element_by_xpath(self.xpath['email_in'])
-        email_in.clear()
-        sleep(9)
-        email_in.send_keys(self.email)
-        sleep(14)
+        self._click_on('login_btn')
+        email_in = self._write_to('email_in', self.email)
+        sleep(11)
         email_in.send_keys(Keys.RETURN)
-        sleep(8)
-
         # тут ждет кода с почты
-        email_key_in = self.driver.find_element_by_xpath(self.xpath['email_key_in'])
-        email_key_in.clear()
         key = input('Email key: ')
-        # TODO: validate key \d{4}
-        email_key_in.send_keys(key)
-        sleep(2)
+        email_key_in = self._write_to('email_key_in', key)
+        sleep(11)
         email_key_in.send_keys(Keys.RETURN)
 
+
+    def enter(self):
+        self.driver = webdriver.Chrome()
+
     def quit(self):
+        self.driver.close()
         self.driver.quit()
 
 
 if __name__ == '__main__':
     with WebDriver() as bot:
+        bot.start()
+        bot.login()
+        sleep(10)
         print("logined quite")
