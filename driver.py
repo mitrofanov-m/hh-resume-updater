@@ -3,8 +3,10 @@ from selenium.webdriver.common.keys import Keys
 from contextlib import contextmanager
 from time import sleep
 import traceback
-from settings.settings import EMAIL, HH_PASSWORD
+from settings.settings import EMAIL, HH_PASSWORD, HH_RESUME
+from selenium.common.exceptions import NoSuchElementException
 from hh_mail import *
+import pickle
 
 
 class WebDriver:
@@ -13,16 +15,14 @@ class WebDriver:
             'login_btn': "(//a[text() = 'Войти']/parent::div[contains(@class, 'item_no-mobile')]/child::a)[2]",
             'email_in': "(//input[@placeholder='Email или телефон' or @name='login'])",
             'email_key_in': "(//input[@placeholder='Введите код' or @name='otp-code-input'])",
-            'my_resume': "(//a[text()='Мои резюме' or @data-qa='mainmenu_myResumes'])",
+            'my_resume': "//a[text()='Мои резюме' or @data-qa='mainmenu_myResumes']",
             'switch_to_pass': "//span[@class = 'bloko-link-switch']",
             'pass_in': "//input[@type = 'password']",
-            'login_submit': '//button[@class="bloko-button bloko-button_primary"]'
-        },
-        'desktop_absolute': {
-            'login_btn': '/html/body/div[5]/div[3]/div/div[1]/div[1]/div/div[5]/a',
-            'email_in': '/html/body/div[6]/div/div[1]/div[4]/div/div/div/div/div/div/div[1]/div[1]/div[1]/div[2]/div/div/form/div[1]/input',
-            'email_key_in': '//*[@id="HH-React-Root"]/div/div/div/div/div/div/div/div/div/div/div/div/form/div[1]/div/div[1]/input',
-            'my_resume': "//a[text()='Мои резюме']"
+            'login_submit': '//button[@class="bloko-button bloko-button_primary"]',
+            'profile_btn': "//button[contains(@data-qa,'applicantProfile')]",
+            'update_btn': f"//div[@data-qa = 'resume' and @data-qa-title = '{HH_RESUME}']" \
+                           "//descendant::div[@class='applicant-resumes-recommendations-button']" \
+                           "//child::button[@data-qa='resume-update-button']"
         },
         'mobile': {
             'login_btn': "(//a[text()='Войти' ]/parent::div[contains(@class, 'item_mobile')]/child::a)[1]",
@@ -55,6 +55,15 @@ class WebDriver:
         return True
 
 
+    @property
+    def authorized(self):
+        try:
+            self.driver.find_element_by_xpath(self.xpath['profile_btn'])
+            return True
+        except NoSuchElementException:
+            return False
+
+
     def _click_on(self, btn):
         sleep(12)
         login_btn = self.driver.find_element_by_xpath(self.xpath[btn])
@@ -71,9 +80,35 @@ class WebDriver:
             sleep(0.5)
         return field_in
 
+    def _update_cookies(self):
+        sleep(8)
+        if self.authorized:
+            pickle.dump(self.driver.get_cookies(), open('settings/cookies.pkl', "wb"))
+            print('Cookies have been updated.')
+            return True
+        return False
+        
+
+    def _set_cookies(self):
+        try:
+            cookies = pickle.load(open('settings/cookies.pkl', "rb"))
+        except FileNotFoundError:
+            return False
+
+        for cookie in cookies:
+                if 'expiry' in cookie:
+                    del cookie['expiry']
+                self.driver.add_cookie(cookie)
+        sleep(5)
+        self.driver.refresh()
+        
+        return self.authorized
+
 
     def start(self):
         self.driver.get('https://hh.ru/')
+        if not self._set_cookies():
+            self.login()
 
 
     def login(self):
@@ -88,6 +123,7 @@ class WebDriver:
         email_key_in = self._write_to('email_key_in', key)
         sleep(11)
         email_key_in.send_keys(Keys.RETURN)
+        self._update_cookies()
 
 
     def enter(self):
@@ -102,6 +138,10 @@ class WebDriver:
 if __name__ == '__main__':
     with WebDriver() as bot:
         bot.start()
-        bot.login()
-        sleep(10)
         print("logined quite")
+        bot._click_on('my_resume')
+        try:
+            bot._click_on('update_btn')
+        except NoSuchElementException:
+            print('Cannot update now, try later.')
+        sleep(10)

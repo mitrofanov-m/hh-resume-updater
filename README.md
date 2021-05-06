@@ -3,7 +3,7 @@
 ## TODO list:
 - ~~stable context manager(override init/enter methods)~~ 
 - ~~parsing email code~~
-- saving cookies
+- ~~saving cookies~~
 - password login
     - добавить движение мыши для обхода капчи 
 - fake user-agent
