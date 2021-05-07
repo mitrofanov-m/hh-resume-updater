@@ -44,11 +44,6 @@ def _get_body_of(email):
         arr = response_part[0]
         if isinstance(arr, tuple):
             msg = emaillib.message_from_string(str(arr[1],'utf-8'))
-            
-            # assert email_from == '"hh.ru" <noreply@hh.ru>'
-            # время письма - не позднее последних 30 мин
-
-            
             if _check_headers_of(msg) and msg.get_content_type() == "text/html":
                 body = msg.get_payload(decode=True).decode()
                 return body
@@ -57,8 +52,6 @@ def _get_body_of(email):
 
 
 def get_email_key():
-    # xpath of email code
-    # //p[contains(text(),"ваш код для авторизации на")]//preceding::p//child::b[string-length(text()) = 4 and '' = translate(text(), '0123456789', '')]
     email_body = _get_latest_email()
     if email_body is None:
         # or exception

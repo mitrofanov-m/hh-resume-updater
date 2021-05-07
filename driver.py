@@ -9,7 +9,7 @@ from hh_mail import *
 import pickle
 
 
-class WebDriver:
+class HeadHunterBot:
     __xpaths_of = {
         'desktop':{
             'login_btn': "(//a[text() = 'Войти']/parent::div[contains(@class, 'item_no-mobile')]/child::a)[2]",
@@ -32,13 +32,12 @@ class WebDriver:
     }
 
 
-    def __init__(self,device='desktop', timeout=False):
+    def __init__(self,device='desktop'):
         print('__init__ method called')
         self.xpath = self.__xpaths_of[device]
         self.driver = None
         self.email = EMAIL
         self.password = HH_PASSWORD
-        sleep(2)
 
 
     def __enter__(self):
@@ -64,23 +63,23 @@ class WebDriver:
             return False
 
 
-    def _click_on(self, btn):
-        sleep(12)
+    def click_on(self, btn):
+        sleep(7)
         login_btn = self.driver.find_element_by_xpath(self.xpath[btn])
         login_btn.click()
 
 
-    def _write_to(self, input_field, data):
+    def write_to(self, input_field, data):
         sleep(9)
         field_in = self.driver.find_element_by_xpath(self.xpath[input_field])
         field_in.clear()
-        sleep(9)
+        sleep(5)
         for i in data:
             field_in.send_keys(i)
             sleep(0.5)
         return field_in
 
-    def _update_cookies(self):
+    def _update_cookies(self)-> bool:
         sleep(8)
         if self.authorized:
             pickle.dump(self.driver.get_cookies(), open('settings/cookies.pkl', "wb"))
@@ -89,7 +88,7 @@ class WebDriver:
         return False
         
 
-    def _set_cookies(self):
+    def _set_cookies(self)-> bool:
         try:
             cookies = pickle.load(open('settings/cookies.pkl', "rb"))
         except FileNotFoundError:
@@ -111,19 +110,19 @@ class WebDriver:
             self.login()
 
 
-    def login(self):
-        self._click_on('login_btn')
-        email_in = self._write_to('email_in', self.email)
+    def login(self)-> bool:
+        self.click_on('login_btn')
+        email_in = self.write_to('email_in', self.email)
         sleep(11)
         email_in.send_keys(Keys.RETURN)
         sleep(30)
         key = get_email_key()
         if key is None:
             raise ValueError('Incorrect email key') 
-        email_key_in = self._write_to('email_key_in', key)
+        email_key_in = self.write_to('email_key_in', key)
         sleep(11)
         email_key_in.send_keys(Keys.RETURN)
-        self._update_cookies()
+        return self._update_cookies()
 
 
     def enter(self):
@@ -136,12 +135,12 @@ class WebDriver:
 
 
 if __name__ == '__main__':
-    with WebDriver() as bot:
+    with HeadHunterBot() as bot:
         bot.start()
         print("logined quite")
-        bot._click_on('my_resume')
+        bot.click_on('my_resume')
         try:
-            bot._click_on('update_btn')
+            bot.click_on('update_btn')
         except NoSuchElementException:
-            print('Cannot update now, try later.')
+            print('Cannot update now, try again later.')
         sleep(10)
