@@ -1,5 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.options import Options
+
 from contextlib import contextmanager
 from time import sleep
 import traceback
@@ -13,31 +15,42 @@ class HeadHunterBot:
     __xpaths_of = {
         'desktop':{
             'login_btn': "(//a[text() = 'Войти']/parent::div[contains(@class, 'item_no-mobile')]/child::a)[2]",
-            'email_in': "(//input[@placeholder='Email или телефон' or @name='login'])",
-            'email_key_in': "(//input[@placeholder='Введите код' or @name='otp-code-input'])",
-            'my_resume': "//a[text()='Мои резюме' or @data-qa='mainmenu_myResumes']",
+            'email_in': "(//input[@placeholder = 'Email или телефон' or @name = 'login'])",
+            'email_key_in': "(//input[@placeholder = 'Введите код' or @name = 'otp-code-input'])",
+            'my_resume': "//a[text() = 'Мои резюме' or @data-qa = 'mainmenu_myResumes']",
             'switch_to_pass': "//span[@class = 'bloko-link-switch']",
             'pass_in': "//input[@type = 'password']",
-            'login_submit': '//button[@class="bloko-button bloko-button_primary"]',
+            'login_submit': '//button[@class = "bloko-button bloko-button_primary"]',
             'profile_btn': "//button[contains(@data-qa,'applicantProfile')]",
+            'update_btn': f"//div[@data-qa = 'resume' and @data-qa-title = '{HH_RESUME}']" \
+                           "//descendant::div[@class = 'applicant-resumes-recommendations-button']" \
+                           "//child::button[@data-qa = 'resume-update-button']"
+        },
+        'mobile': {
+            'login_btn': "(//a[text() = 'Войти']/parent::div[contains(@class, 'item_mobile')]/child::a)[1]",
+            'email_in': "(//input[@placeholder = 'Email или телефон' or @name = 'login'])",
+            'email_key_in': "(//input[@placeholder = 'Введите код' or @name = 'otp-code-input'])",
+            'mainmenu_mobile_btn': "//button[@data-qa = 'mainmenu_mobile']",
+            'my_resume': "//a[text() = 'Мои резюме' and contains(@data-qa, 'xs')]",
             'update_btn': f"//div[@data-qa = 'resume' and @data-qa-title = '{HH_RESUME}']" \
                            "//descendant::div[@class='applicant-resumes-recommendations-button']" \
                            "//child::button[@data-qa='resume-update-button']"
-        },
-        'mobile': {
-            'login_btn': "(//a[text()='Войти' ]/parent::div[contains(@class, 'item_mobile')]/child::a)[1]",
-            'email_in': "(//input[@placeholder='Email или телефон' or @name='login'])",
-            'email_key_in': "(//input[@placeholder='Введите код' or @name='otp-code-input'])"
+
         }
     }
 
 
-    def __init__(self,device='desktop'):
+    def __init__(self,device='desktop', invisible=False):
         print('__init__ method called')
         self.xpath = self.__xpaths_of[device]
         self.driver = None
         self.email = EMAIL
         self.password = HH_PASSWORD
+        self.options = None
+        
+        if invisible:
+            self.options = webdriver.ChromeOptions()
+            self.options.headless = True
 
 
     def __enter__(self):
@@ -48,9 +61,8 @@ class HeadHunterBot:
 
     def __exit__(self, exception_type, exception_value, traceback):
         self.quit()
-        if exception_type is not None:
-            traceback.print_exception(value=exception_value, tb=traceback)
-        
+        #if exception_type is not None:
+        #    traceback.print_exception(value=exception_value, tb=traceback)
         return True
 
 
@@ -126,7 +138,11 @@ class HeadHunterBot:
 
 
     def enter(self):
-        self.driver = webdriver.Chrome()
+        if not self.options:
+            self.driver = webdriver.Chrome()
+        else:
+            self.driver = webdriver.Chrome(options=self.options)
+
 
 
     def quit(self):
@@ -134,8 +150,8 @@ class HeadHunterBot:
         self.driver.quit()
 
 
-if __name__ == '__main__':
-    with HeadHunterBot() as bot:
+def push_higher_in_search():
+    with HeadHunterBot(invisible=True) as bot:
         bot.start()
         print("logined quite")
         bot.click_on('my_resume')
@@ -144,3 +160,7 @@ if __name__ == '__main__':
         except NoSuchElementException:
             print('Cannot update now, try again later.')
         sleep(10)
+
+
+if __name__ == '__main__':
+    push_higher_in_search()
