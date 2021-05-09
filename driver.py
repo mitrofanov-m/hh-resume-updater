@@ -69,21 +69,37 @@ class HeadHunterBot:
     @property
     def authorized(self):
         try:
-            self.driver.find_element_by_xpath(self.xpath['profile_btn'])
+            self.find_element('profile_btn')
             return True
         except NoSuchElementException:
             return False
 
 
+    def find_element(self, key):
+        if key in self.xpath.keys():
+            element = self.driver.find_element_by_xpath(self.xpath[key])
+        else:
+            element = self.driver.find_element_by_xpath(key)
+        return element
+
+    
+    def find_elements(self, key):
+        if key in self.xpath.keys():
+            elements = self.driver.find_elements_by_xpath(self.xpath[key])
+        else:
+            elements = self.driver.find_elements_by_xpath(key)
+        return elements
+
+
     def click_on(self, btn):
         sleep(7)
-        login_btn = self.driver.find_element_by_xpath(self.xpath[btn])
-        login_btn.click()
+        btn_element = self.find_element(btn)
+        btn_element.click()
 
 
     def write_to(self, input_field, data):
         sleep(9)
-        field_in = self.driver.find_element_by_xpath(self.xpath[input_field])
+        field_in = self.find_element(input_field)
         field_in.clear()
         sleep(5)
         for i in data:
@@ -120,6 +136,7 @@ class HeadHunterBot:
         self.driver.get('https://hh.ru/')
         if not self._set_cookies():
             self.login()
+            self._update_cookies()
 
 
     def login(self)-> bool:
@@ -134,7 +151,7 @@ class HeadHunterBot:
         email_key_in = self.write_to('email_key_in', key)
         sleep(11)
         email_key_in.send_keys(Keys.RETURN)
-        return self._update_cookies()
+        return True
 
 
     def enter(self):
@@ -142,7 +159,6 @@ class HeadHunterBot:
             self.driver = webdriver.Chrome()
         else:
             self.driver = webdriver.Chrome(options=self.options)
-
 
 
     def quit(self):

@@ -9,6 +9,7 @@
 - ~~stable context manager(override init/enter methods)~~ 
 - ~~parsing email code~~
 - ~~saving cookies~~
+- ~~invisible mode~~
 - fake user-agent
 - swithing to mobile
     - user-agent switcher
