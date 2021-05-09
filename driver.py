@@ -24,7 +24,9 @@ class HeadHunterBot:
             'profile_btn': "//button[contains(@data-qa,'applicantProfile')]",
             'update_btn': f"//div[@data-qa = 'resume' and @data-qa-title = '{HH_RESUME}']" \
                            "//descendant::div[@class = 'applicant-resumes-recommendations-button']" \
-                           "//child::button[@data-qa = 'resume-update-button']"
+                           "//child::button[@data-qa = 'resume-update-button']",
+            'history_btn': f"//div[@data-qa = 'resume' and @data-qa-title = '{HH_RESUME}']" \
+                           "//descendant::a[contains(@href, 'resumeview/history')]"
         },
         'mobile': {
             'login_btn': "(//a[text() = 'Войти']/parent::div[contains(@class, 'item_mobile')]/child::a)[1]",
@@ -34,7 +36,10 @@ class HeadHunterBot:
             'my_resume': "//a[text() = 'Мои резюме' and contains(@data-qa, 'xs')]",
             'update_btn': f"//div[@data-qa = 'resume' and @data-qa-title = '{HH_RESUME}']" \
                            "//descendant::div[@class='applicant-resumes-recommendations-button']" \
-                           "//child::button[@data-qa='resume-update-button']"
+                           "//child::button[@data-qa='resume-update-button']",
+                           
+            'history_btn': f"//div[@data-qa = 'resume' and @data-qa-title = '{HH_RESUME}']" \
+                           "//descendant::a[contains(@href, 'resumeview/history')]"
 
         }
     }
@@ -177,6 +182,33 @@ def push_higher_in_search():
             print('Cannot update now, try again later.')
         sleep(10)
 
+def parse_views_time():
+    with HeadHunterBot(invisible=False) as bot:
+        bot.start()
+        print("logined quite")
+        bot.click_on('my_resume')
+        bot.click_on('history_btn')
+        sleep(10)
+        resume_views = bot.find_elements("//span[@class = 'resume-view-history-views']")
+        views_time = []
+        for resume_view in resume_views:
+            views_time.append(resume_view.text)
+
+        try:
+            expandable_btn = bot.find_elements("//span[contains(@class,'bloko-link-switch')]")
+            for btn in expandable_btn:
+                sleep(7)
+                btn.click()
+            expandable_views = bot.find_elements("//span[@class='g-expandable']")
+            for view in expandable_views:
+                view = view.text.split(', ')
+                views_time.extend(view)
+        except Exception as e:
+            print('no expandable elements')
+
+
+        return views_time
 
 if __name__ == '__main__':
-    push_higher_in_search()
+    views_time = parse_views_time()
+    print(views_time)

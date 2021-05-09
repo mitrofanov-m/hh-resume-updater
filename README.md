@@ -14,8 +14,8 @@
 - swithing to mobile
     - user-agent switcher
 - best time searcher
-    - parse times
-    - split by N clusters (best time to update)
+    - ~~parse times~~
+    - ~~split by N clusters (best time to update)~~
 
 - good logging system
 - not constant timeout
