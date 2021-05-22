@@ -1,14 +1,16 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.remote.webelement import WebElement
 
 from contextlib import contextmanager
 from time import sleep
 import traceback
 from settings.settings import EMAIL, HH_PASSWORD, HH_RESUME
 from selenium.common.exceptions import NoSuchElementException
-from hh_mail import *
+from mailparser import *
 import pickle
+import logging
 
 
 class HeadHunterBot:
@@ -46,7 +48,6 @@ class HeadHunterBot:
 
 
     def __init__(self,device='desktop', invisible=False):
-        print('__init__ method called')
         self.xpath = self.__xpaths_of[device]
         self.driver = None
         self.email = EMAIL
@@ -59,15 +60,13 @@ class HeadHunterBot:
 
 
     def __enter__(self):
-        print('__enter__ method called')
+        logging.info('__enter__ method called')
         self.enter()
         return self
 
 
     def __exit__(self, exception_type, exception_value, traceback):
         self.quit()
-        #if exception_type is not None:
-        #    traceback.print_exception(value=exception_value, tb=traceback)
         return True
 
 
@@ -80,7 +79,7 @@ class HeadHunterBot:
             return False
 
 
-    def find_element(self, key):
+    def find_element(self, key)-> WebElement:
         if key in self.xpath.keys():
             element = self.driver.find_element_by_xpath(self.xpath[key])
         else:
@@ -88,7 +87,7 @@ class HeadHunterBot:
         return element
 
     
-    def find_elements(self, key):
+    def find_elements(self, key)-> list:
         if key in self.xpath.keys():
             elements = self.driver.find_elements_by_xpath(self.xpath[key])
         else:
@@ -102,21 +101,23 @@ class HeadHunterBot:
         btn_element.click()
 
 
-    def write_to(self, input_field, data):
+    def write_to(self, input_field, data)-> WebElement:
         sleep(9)
         field_in = self.find_element(input_field)
-        field_in.clear()
-        sleep(5)
-        for i in data:
-            field_in.send_keys(i)
-            sleep(0.5)
+        # поставить другую очистку
+        if field_in.get_attribute("value") != data:
+            field_in.clear()
+            sleep(5)
+            for i in data:
+                field_in.send_keys(i)
+                sleep(0.5)
         return field_in
 
     def _update_cookies(self)-> bool:
         sleep(8)
         if self.authorized:
             pickle.dump(self.driver.get_cookies(), open('settings/cookies.pkl', "wb"))
-            print('Cookies have been updated.')
+            logging.info('Cookies have been updated.')
             return True
         return False
         
@@ -137,11 +138,13 @@ class HeadHunterBot:
         return self.authorized
 
 
-    def start(self):
+    def start(self)-> bool:
         self.driver.get('https://hh.ru/')
-        if not self._set_cookies():
+        recovered = self._set_cookies()
+        if not recovered:
             self.login()
             self._update_cookies()
+        return recovered
 
 
     def login(self)-> bool:
@@ -152,10 +155,23 @@ class HeadHunterBot:
         sleep(30)
         key = get_email_key()
         if key is None:
-            raise ValueError('Incorrect email key') 
+            logging.error('Incorrect email key')
+            raise ValueError
         email_key_in = self.write_to('email_key_in', key)
         sleep(11)
         email_key_in.send_keys(Keys.RETURN)
+        return True
+
+    
+    def update_resume(self):
+        sleep(10)
+        self.click_on('my_resume')
+        try:
+            self.click_on('update_btn')
+        except NoSuchElementException:
+            logging.info('Cannot update now, try again later.')
+            return False
+        
         return True
 
 
@@ -172,20 +188,17 @@ class HeadHunterBot:
 
 
 def push_higher_in_search():
-    with HeadHunterBot(invisible=True) as bot:
+    with HeadHunterBot(invisible=False) as bot:
         bot.start()
-        print("logined quite")
-        bot.click_on('my_resume')
-        try:
-            bot.click_on('update_btn')
-        except NoSuchElementException:
-            print('Cannot update now, try again later.')
+        logging.info("logined quite")
+        bot.update_resume()
         sleep(10)
+
 
 def parse_views_time():
     with HeadHunterBot(invisible=False) as bot:
         bot.start()
-        print("logined quite")
+        logging.info("logined quite")
         bot.click_on('my_resume')
         bot.click_on('history_btn')
         sleep(10)
@@ -204,11 +217,9 @@ def parse_views_time():
                 view = view.text.split(', ')
                 views_time.extend(view)
         except Exception as e:
-            print('no expandable elements')
-
+            logging.warning('no expandable elements')
 
         return views_time
 
 if __name__ == '__main__':
-    views_time = parse_views_time()
-    print(views_time)
+    push_higher_in_search()
