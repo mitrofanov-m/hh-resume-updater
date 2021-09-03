@@ -1,16 +1,15 @@
-from settings.settings import EMAIL, EMAIL_PASSWORD, SMTP_PORT, SMTP_SERVER
+#from settings.settings import EMAIL, EMAIL_PASSWORD, SMTP_SERVER
 import imaplib
 import email as emaillib
 from bs4 import BeautifulSoup
 import traceback
 import re
-import base64
 
 
-def _get_latest_email():
+def _get_latest_email(email_settings):
     try:
-        imap_session = imaplib.IMAP4_SSL(SMTP_SERVER)
-        imap_session.login(EMAIL,EMAIL_PASSWORD)
+        imap_session = imaplib.IMAP4_SSL(email_settings['SMTP_SERVER'])
+        imap_session.login(email_settings['EMAIL'] ,email_settings['EMAIL_PASSWORD'])
         status, messages = imap_session.select("INBOX")
         latest_email_id = int(messages[0])
         latest_email = imap_session.fetch(str(latest_email_id), '(RFC822)')
@@ -25,6 +24,7 @@ def _get_latest_email():
         imap_session.logout()
     
     return _get_body_of(latest_email)
+
 
 def _check_headers_of(msg):
     email_subject = emaillib.header.decode_header(msg['subject'])
@@ -51,8 +51,8 @@ def _get_body_of(email):
     return None
 
 
-def get_email_key():
-    email_body = _get_latest_email()
+def get_email_key(email_settings):
+    email_body = _get_latest_email(email_settings)
     if email_body is None:
         # or exception
         return None
