@@ -57,5 +57,5 @@ def get_email_key(email_settings):
         # or exception
         return None
 
-    soup = BeautifulSoup (email_body, 'html.parser')
+    soup = BeautifulSoup(email_body, 'html.parser')
     return soup.find("b", string=re.compile("\d\d\d\d")).string
